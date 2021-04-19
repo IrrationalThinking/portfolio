@@ -1,0 +1,33 @@
+things i fixed:
+
+changed the variables i j and count to non-static because they are not suitable to be static variables as these are used for loops and will not change if static.
+
+moved any pointers to be after the data type used rather than before the name of the variable for readability
+
+replaced the mispelt emailAddress variable with the correct spelling
+
+Fixed incorrect brakets in the first for loop in the main method
+
+I removed all of the sorting methods because they are pointless (sfn, sln, spn, sem). on that note j was also removed because it no longer has any use
+
+adding brackets around all the loops and while statements in all the methods because it adds readability to the code (this included all of the find methods(methods beginning with f))
+
+initised i to be 0 in all of the find methods because if they weren't the i would start at the old value if the searching was continued. On this note moved the ++i in the while loop to the bottom of the loop this fixes two problems. The first is that the i will be added onto before the loop begins which will make the loop stop 1 short. The other is if the i is i++ the loop will skip over the first character in the array it is finding meaning that the result is never found.
+
+closed the file because leaving it open causes memory to be used when it doesn't need to be
+
+was using the size of the firstname for all memory allocation will overwrite the memory stored in first name
+
+changed phone number from a int into a string because what if the number needs a symbol in there like a +. also allociated memory to this because it is now a string
+
+changed all the find methods to compared string with the strcmp method because Strings cannot be compared like ints e.g. no < or >
+
+freed allocated memory at the end of the file
+
+changed most of the 2nd while loop in the main method because it made no sense. it now takes 2 inputs from standard input first an expected string then a number of which part of the struct to search.
+
+Changed the case order around to more suit which order the Strings were read in by e.g. firstname is first so its number is 1, lastname is second so its number is 2 etc.
+
+changed the first forloop into a whileloop that reads the file in storing each value into a temp variable which then inside of the loop copys the values using strcpy into each variable inside the struct. Only reading in 50 values into a file with either less than or over 50 lines would of caused more or less work than was needed.
+
+all the memory allociation was correct moved the allociation of each single struct into the whileloop because the memory would be overwritten each time.
