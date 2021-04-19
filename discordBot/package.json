@@ -1,0 +1,12 @@
+{
+  "name": "qualityBot",
+  "version": "1.0.0",
+  "description": "To show the world true quality",
+  "main": "bot.js",
+  "author": "Irrational Thinking",
+  "dependencies": {
+    "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+    "discord.js": "^11.5.1",
+    "winston": "^3.2.1"
+  }
+}
