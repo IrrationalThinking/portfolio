@@ -4,7 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
 using System;
-
+/**
+ * Author: Tom Kent-Peterson
+ * CombatController is a script that controls all of the systems that go on during a turn, so rather than the actual turn systems it controls what each unit can do
+ * and at the end of the turn prints out an event log to the game screen.
+ * **/
 public class CombatController : MonoBehaviour
 {
     public GameObject attacker;
@@ -24,6 +28,7 @@ public class CombatController : MonoBehaviour
     public int roll;
     public int damageStore;
     public bool wasAbility = false;
+    public bool targetSelf = false;
     public bool isFriendly = false;
     public bool targetAll = false;
     //public Button initTeamsTurn;
@@ -32,46 +37,51 @@ public class CombatController : MonoBehaviour
     {
         abilityData = GameObject.Find("GameMaster").GetComponent<GameMaster>();
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    /* selectAbility is a method which is called when the user clicks on an ability in the magic menu, it checks the abilities list for the name of the ability
+     * then checks the rules of the ability an F means it effects a friendly unit so it can only target friendly units, FA means it will target the entire of that units team,
+     * EA means it will target all of the enemies team and S means it can only target itself.*/
     public void selectAbility(Button abilityClicked) {
         Uiscript callAttack = GameObject.Find("Arena").GetComponent<Uiscript>();
         GameObject currentTeam = GameObject.Find("Menu Panel").GetComponent<TurnController>().currentUnit.transform.parent.gameObject;
         GameObject parentOfButton = abilityClicked.transform.gameObject;
         currentAbility = parentOfButton.transform.GetComponent<Text>();
         abilityUsing = currentAbility.text;
-
         for (int i = 0; i < abilityData.abilities.Count; i++) {
             if (abilityData.abilities[i][0] == String.Concat(abilityUsing.ToString().Where(c => !Char.IsWhiteSpace(c)))) {
                 Debug.Log("in this :))))))))))))");
                 if (abilityData.abilities[i][2] == "F") {
                     Debug.Log("in this :)");
                     isFriendly = true;
+                    targetSelf = false;
                 }else if(abilityData.abilities[i][2] == "FA") {
                     targetAll = true;
                     isFriendly = true;
+                    targetSelf = false;
                 }else if(abilityData.abilities[i][2] == "EA") {
                     isFriendly = false;
                     targetAll = true;
+                    targetSelf = false;
+                }else if(abilityData.abilities[i][2] == "S") {
+                    isFriendly = true;
+                    targetAll = false;
+                    targetSelf = true;
                 }
                 break;
             }
         }
         callAttack.attackingEnemies();
     }
-    //This prevents the user from storing an ability and then using a basic attack to use the ability without actually using it.
+    /* deselectAbility is a method which prevents the user from storing an ability and then using a basic attack to use the ability without actually using it.*/
     public void deselectAbility() {
         abilityUsing = "";
         isFriendly = false;
         targetAll = false;
+        targetSelf = false;
     }
+    /* selectDefender is the method which is called upon a target being chosen, this happens when either a player selects the attack option or an ability option inside of the magic menu
+     * the way it works is it checks if the attacker is targetting a friendly unit or not, or/and if the attacker is using a target the entire team spell.
+     * a sprite appears above the targeted units if friendly uses the friendly sprite and if enemy uses the target arrow instead.*/
     public void selectDefender(Button buttonClicked) {
-        
-
         GameObject currentTeam = GameObject.Find("Menu Panel").GetComponent<TurnController>().currentUnit.transform.parent.gameObject;
         GameObject parentOfButton = buttonClicked.transform.gameObject;
         currentButton = parentOfButton.transform.GetComponent<Text>();
@@ -93,16 +103,21 @@ public class CombatController : MonoBehaviour
                     }
                 }
             } else {
-                if(!targetAll){
-                    defender = GameObject.Find("Team 2 Panel/" + search);
-                    defender.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
+                if(!targetSelf){
+                    if(!targetAll){
+                        defender = GameObject.Find("Team 2 Panel/" + search);
+                        defender.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
 
-                } else {
-                    search = GameObject.Find("Team 2 Panel").transform.GetChild(0).name;
-                    defender = GameObject.Find("Team 2 Panel/" + search);
-                    foreach (GameObject arrow in abilityData.team2) {
-                        arrow.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
+                    } else {
+                        search = GameObject.Find("Team 2 Panel").transform.GetChild(0).name;
+                        defender = GameObject.Find("Team 2 Panel/" + search);
+                        foreach (GameObject arrow in abilityData.team2) {
+                            arrow.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
+                        }
                     }
+                } else {
+                    defender = attacker;
+                    defender.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
                 }
             }
         } else {
@@ -118,22 +133,27 @@ public class CombatController : MonoBehaviour
                     }
                 }
             } else {
-                if(!targetAll){
-                    defender = GameObject.Find("Team 1 Panel/" + search);
-                    defender.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
-                } else {
-                    search = GameObject.Find("Team 1 Panel").transform.GetChild(0).name;
-                    defender = GameObject.Find("Team 1 Panel/" + search);
-                    foreach (GameObject arrow in abilityData.team1) {
-                        arrow.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
+                if(!targetSelf){
+                    if(!targetAll){
+                        defender = GameObject.Find("Team 1 Panel/" + search);
+                        defender.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
+                    } else {
+                        search = GameObject.Find("Team 1 Panel").transform.GetChild(0).name;
+                        defender = GameObject.Find("Team 1 Panel/" + search);
+                        foreach (GameObject arrow in abilityData.team1) {
+                            arrow.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
+                        }
                     }
+                } else {
+                    defender = attacker;
+                    defender.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = true;
                 }
             }
         }
-        //defender = GameObject.Find(currentTeam.name + "/" + search);
         Debug.Log(defender);
-        
     }
+    /* action is a method which based on what button you click chooses which combat method happens, also does a roll to see the units roll to hit,
+     * if the move comes from the attack option then the attack method is ran, if the moves comes from the ability option then the ability method happens instead.*/
     public void action() {
         roll = UnityEngine.Random.Range(1, 100);
         if (string.IsNullOrEmpty(abilityUsing))
@@ -142,10 +162,11 @@ public class CombatController : MonoBehaviour
             //Debug.Log("in else :)");
             ability();
         events.setText(turnEvent); //temp
+        deselectAbility();
     }
-    //searches for a specific string and then does the ability based on the rules associated with the string, 
-    //this will be changed later down the line as the game gets larger, 
-    //as reading it like this is awful and I will probably use a list of lists or something similar later on
+    /* the ability method searches for a specific string and then does the ability based on the rules associated with the string
+     * the String concat works by checking if the ability is two words and if it is removing that space because in game the ability name has spaces if needed,
+     * but in the text file it does not have any spaces.*/
     public void ability() {
         //String.Concat(abilityName.text.ToString().Where(c => !Char.IsWhiteSpace(c)))
         string[] rowUsed = new string[9];
@@ -168,6 +189,8 @@ public class CombatController : MonoBehaviour
             }
         }
     }
+    /* abilityCost is a method which deducts the cost of the ability once it has been used,
+     * it does this when the confirm button has been pressed and deducts the mana cost from the unit.*/
     public void abilityCost(int cost) {
         int newMana;
         newMana = attacker.GetComponent<Unit>().mana;
@@ -175,13 +198,16 @@ public class CombatController : MonoBehaviour
         attacker.GetComponent<Unit>().mana = newMana;
         attacker.GetComponent<Unit>().updateStats();
     }
+    /* checkCost is a method which checks prior to the ability being used if the unit can actually afford to use the ability.
+     * it does this by checking first if the ability exists, if it does not then it doesn't bother checking it later in the method,
+     * once the method checks how many abilities exist, it then checks if the units current mana is greater than the cost associated
+     * with the ability if it is then the button is usable if not the button is not interactable.*/
     public void checkCost() {
         int currentMana = attacker.GetComponent<Unit>().mana;
-        //Button currentItem;
+        Debug.Log("in check cost current mana of attacker is " + currentMana);
         int counter = 0;
         int maxCount = 0;
-        string[] abilityCC = new string[4];
-        //string abilityCC1, abilityCC2, abilityCC3, abilityCC4;
+        string[] abilityCC = new string[7];
         if (!string.IsNullOrEmpty(attacker.GetComponent<Unit>().ability1)) {
             abilityCC[0] = attacker.GetComponent<Unit>().ability1;
             maxCount++;
@@ -194,6 +220,18 @@ public class CombatController : MonoBehaviour
                     if (!string.IsNullOrEmpty(attacker.GetComponent<Unit>().ability4)) {
                         abilityCC[3] = attacker.GetComponent<Unit>().ability4;
                         maxCount++;
+                        if (!string.IsNullOrEmpty(attacker.GetComponent<Unit>().ability5)) {
+                            abilityCC[4] = attacker.GetComponent<Unit>().ability5;
+                            maxCount++;
+                            if (!string.IsNullOrEmpty(attacker.GetComponent<Unit>().ability6)) {
+                                abilityCC[5] = attacker.GetComponent<Unit>().ability6;
+                                maxCount++;
+                                if (!string.IsNullOrEmpty(attacker.GetComponent<Unit>().ability7)) {
+                                    abilityCC[6] = attacker.GetComponent<Unit>().ability7;
+                                    maxCount++;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -201,18 +239,11 @@ public class CombatController : MonoBehaviour
         while(counter != maxCount) {
             
             for (int i = 0; i < abilityData.abilities.Count; i++) {
-                if (abilityCC[counter] == abilityData.abilities[i][0]) {
+                if (String.Concat(abilityCC[counter].Where(c => !Char.IsWhiteSpace(c))) == abilityData.abilities[i][0]) {
                     if(currentMana < int.Parse(abilityData.abilities[i][1])) {
-                        //currentItem = GameObject.Find("Ability" + counter+1).GetComponent<Button>();
-                        //currentItem.interactable = false;
                         if(counter == 0){
                             Debug.Log(abilityData.abilities[i][1]);
-                            //GameObject.Find("Ability1").SetActive(true);
-                            //abilityCC1.GetComponent<Button>().interactable = false;
                             GameObject.Find("Ability1").GetComponent<Button>().enabled = false;
-                            //GameObject.Find("Ability1").GetComponent<Button>().interactable = false;
-                            //GameObject.Find("Ability1").GetComponent<Button>().enabled = true;
-                            Debug.Log(GameObject.Find("Ability1").GetComponent<Button>().IsInteractable());
                         } else if (counter == 1) {
                             //Debug.Log("Hi");
                             GameObject.Find("Ability2").GetComponent<Button>().enabled = false;
@@ -224,20 +255,24 @@ public class CombatController : MonoBehaviour
                             //Debug.Log("Hi");
                             GameObject.Find("Ability4").GetComponent<Button>().enabled = false;
                         }
+                        if(counter == 4) {
+                            GameObject.Find("Ability5").GetComponent<Button>().enabled = false;
+                        }
+                        if (counter == 5) {
+                            GameObject.Find("Ability6").GetComponent<Button>().enabled = false;
+                        }
+                        if (counter == 6) {
+                            GameObject.Find("Ability7").GetComponent<Button>().enabled = false;
+                        }
                     }
                 }
             }
             counter++;
         }
-        /*for (int i = 0; i < abilityData.abilities.GetLength(0); i++) {
-            if (abilityCC1 == abilityData.abilities[i, 0]) {
-                int cost = int.Parse(abilityData.abilities[i, 1]);
-                abilityCost(cost);
-            }
-
-        }*/
     }
-    //states the effects for the abilities and applies them to the unit affected e.g stun will cause an enemy to lose their turn
+    /* abilityEffect is the method which controls adding a statusEffect to a unit hit with an ability,
+     * a method is called based on what the ability does as referenced in the text file which is read into the abilities list.
+     * the doX methods just apply the status effect to the unit or units depending on if the ability targets everyone.*/
     public void abilityEffect(string[] ability) {
         if(ability[3] == "slowed" || ability[4] == "slowed" || ability[5] == "slowed") {
             doSlow(int.Parse(ability[6]));
@@ -466,7 +501,13 @@ public class CombatController : MonoBehaviour
     public void doManaDrain() {
         attacker.GetComponent<Unit>().health += damageStore;
     }
-    //checks if the ability is magic or physical if the attack is physical just do an attack instead but lose mana
+    
+    /* abilityDamage is the method which if the unit uses a spell, then it will be calculated with this method,
+     * the method first checks if the ability is magical, if it is then it checks the defenders magic resistance vs the attack,
+     * if it is physical it checks the defenders armour against the attackers roll.
+     * isCrit checks if the attack is a critical, it is a critical if the roll is equal to 100-luck which is unit based, if it is a critical then damage is doubled.
+     * damaged is calculated by ability this is determined in the text file and uses a structure similar to Dungeons and Dragons
+     * so for example 3d6 is a cap of 6 randomised 3 times upto a total of 18 damage on 3 6's. The result is fed into an event logger which generates text based on what has happened.*/
     public void abilityDamage(bool isMagic, string[] abilityName) {
         bool isCrit = false;
         if (isMagic) {
@@ -487,10 +528,10 @@ public class CombatController : MonoBehaviour
                 teamAttacking = "Team 2";
                 //teamDefending = "Team 1";
             }
-            if (isFriendly)
-                roll = 10000; //makes it so the heal/buff autohits
+            //if (isFriendly)
+                //roll = 10000; //makes it so the heal/buff autohits
             Debug.Log("roll is " + roll);
-            if (roll+magic >= magicAC && defender.GetComponent<Unit>().isMagicImmune == 0) {
+            if (roll+magic >= magicAC && defender.GetComponent<Unit>().isMagicImmune == 0 || isFriendly && defender.GetComponent<Unit>().isMagicImmune == 0) {
                 if(roll > 100 - attacker.GetComponent<Unit>().luck) {
                     isCrit = true;
                 }
@@ -539,6 +580,12 @@ public class CombatController : MonoBehaviour
                     } else {
                         eventLogger(damage, totalAtk, magicAC, teamAttacking, isCrit, "M", true, false, false, false, abilityName, listOfStatusEffects);
                     }
+                } else {
+                    if (isFriendly) {
+                        eventLogger(damage, totalAtk, magicAC, teamAttacking, isCrit, "M", true, true, false, false, abilityName, listOfStatusEffects);
+                    } else {
+                        eventLogger(damage, totalAtk, magicAC, teamAttacking, isCrit, "M", true, false, false, false, abilityName, listOfStatusEffects);
+                    }
                 }
             } else {
                 if(defender.GetComponent<Unit>().isMagicImmune == 0){
@@ -556,15 +603,18 @@ public class CombatController : MonoBehaviour
         }
         isFriendly = false;
     }
-
+    /* abilityDamageEntireTeam is a method which is heavily based off of the abilityDamage method but it applies to 4 units on either team
+     * the method works by checking the entire team against the attacker all area attacks are magical do I don't need to bother about the attack being physical.
+     * I put the stats which are needed into 3 different arrays, so magic defense health and magicAC are all put into arrays and then each array is individually checked
+     * against the attack, the same thing goes with the damage. Dead units are not effected by the area of effect damage because I don't want anything weird to happen.*/
     public void abilityDamageEntireTeam(string[] abilityName) {
         string listOfStatusEffects = "";
         string teamAttacking = "";
         string teamDefending = "";
         GameObject parentOfDefender = defender.transform.parent.gameObject;
         int magic = attacker.GetComponent<Unit>().magic;
-        if (isFriendly)
-            roll = 10000;
+        //if (isFriendly)
+            //roll = 10000;
         if(parentOfDefender.name == "Team 1 Panel") {
             teamEffected = abilityData.team1;
             teamAttacking = "Team 2";
@@ -583,7 +633,8 @@ public class CombatController : MonoBehaviour
         populateAoEStats(teamHealth, "health");
         populateAoEStats(teamMagicAC, "magicAC");
         for(int i = 0; i<teamMDef.Length; i++) {
-            if(roll+magic > teamMagicAC[i] && teamEffected[i].GetComponent<Unit>().isMagicImmune == 0 && teamEffected[i].GetComponent<Unit>().isDead == false) {
+            if(roll+magic > teamMagicAC[i] && teamEffected[i].GetComponent<Unit>().isMagicImmune == 0 && teamEffected[i].GetComponent<Unit>().isDead == false
+                || isFriendly && teamEffected[i].GetComponent<Unit>().isMagicImmune == 0 && teamEffected[i].GetComponent<Unit>().isDead == false) {
                 numberEffected++;
                 teamEffected[i].GetComponent<Unit>().wasHitByAOE = true;
                 for (int f = 0; f < abilityData.abilities.Count; f++) {
@@ -635,8 +686,9 @@ public class CombatController : MonoBehaviour
         }
         isFriendly = false;
         targetAll = false;
+        targetSelf = false;
     }
-
+    /*populateAoEStats is a method which just checks the stats of the team being targeted by an area of effect spell*/
     public void populateAoEStats(int[] array, string datatype) {
         for(int i = 0; i<array.Length; i++) {
             if(datatype == "health") {
@@ -648,6 +700,7 @@ public class CombatController : MonoBehaviour
             }
         }
     }
+    /*calculateMagicDamage is a method which calculates the damage of a spell similar to dunegons and dragons so if the damage is a 3d6 a 6 sided dice is rolled 3 times*/
     public int calculateMagicDamage(string[] nums) {
         int damage = 0;
         for(int i = 0; i < int.Parse(nums[0]); i++) {
@@ -655,6 +708,9 @@ public class CombatController : MonoBehaviour
         }
         return damage;
     }
+    /*attack is a method which controls the games physical attacks it works very similarly to the abilityDamage method above.
+     * the major diffence is that it calculates damage based on the attack value of the attacker the current formula is 1-10 damage + attacker attack value/4
+     * similar to abilityDamage the attack can crit for double damage, and is fed into an event logger based on what happens.*/
     public void attack(string[] abilityName = null) {
         bool isCrit = false;
         string team = attacker.transform.parent.name;
@@ -737,9 +793,13 @@ public class CombatController : MonoBehaviour
             eventLogger(damage, totalAtk, armourClass, teamAttacking, false, "P", false, false, false, false);
         }
         wasAbility = false;
-        
+        targetSelf = false;
         //string teamDefending;   
     }
+    /*eventLogger is a method which based on the events of the turn ending will send a string to the TurnEvent script, a lot of the eventLogger uses optional variables
+     * because of the amount of different variables that can effect the outcome of the text, I realise this is very verbose but this is the best method I could think of
+     * to get the text as informative as possible, the main variables which are in use is the defender, the attacker, the damage of the attack
+     * and based on these will construct one of many messages below.*/
     public void eventLogger(int damage, int totalAtk, int AC, string teamAttacking, bool wasCrit, string attackType, bool hit, bool friendly, 
                 bool isAreaOfEffect, bool isMagicImmune, string[] abilityName = null, string statusEffect = "", int numberEffected = 0, int overAllDamage = 0, string teamDefending = "") {
         if(!isAreaOfEffect) {

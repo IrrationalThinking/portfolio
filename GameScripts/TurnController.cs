@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
-public class TurnController : MonoBehaviour
-{
+/**
+ * Author: Tom Kent-Peterson
+ * TurnController is a script which is used to control the rules of the games turn based system, 
+ * this will be used whenever the player confirms an action but not the actual actions themselves.
+ **/
+public class TurnController : MonoBehaviour {
     [HideInInspector]
     public GameObject currentUnit;
     public GameObject turnArrowOff;
@@ -27,8 +30,11 @@ public class TurnController : MonoBehaviour
         startGame();
         
     }
+    /* this update method is specifically used to prevent an issue in the game where the scene is loaded before the unit scripts are done initialising, 
+     * this is a bit of a bandaid solution and I hope to find a better one in the future.
+     * also it controls a portion of the status effect system which prevents a unit from doing certain actions under certain effects
+     */
     private void Update() {
-        //fixes and issue with the game starting before all the units are ready, this looks awful and I will learn a better way to do it I promise
         if(gameStarted == 0) {
             int counter = 0;
             for(int f = 0; f < turnOrder.Length; f++) {
@@ -54,11 +60,17 @@ public class TurnController : MonoBehaviour
                         //Debug.Log("hi:)))))))))))");
                         item.GetComponent<Button>().interactable = false;
                     }
+                    if(item.gameObject.name == ("Unit" + i).ToString()) {
+                        if (item.text == temp.GetComponent<Unit>().whoFeared.name) {
+                            item.GetComponent<Button>().interactable = false;
+                        }
+                    }
                     i++;
                 }
             }
         }
     }
+    /* startGame is a method which puts the units into the turn order without sorting them once the game has been initialised. */
     public void startGame() {
         int f = 0;
         units = GameObject.FindGameObjectsWithTag("Unit");
@@ -66,101 +78,78 @@ public class TurnController : MonoBehaviour
             turnOrder[f] = unit.GetComponent<Unit>();
             f++;
         }
-
         return;
     }
+    //settingUp initialises the turn scripts for the first time.
     public void settingUp() {
         checkTurn();
-        //sortingInitiative();
         endTurn.onClick.AddListener(checkTurn);
     }
+    /* sortingInitiative is a method which sorts the turn order of the game using insertion sort but it sorts it in reverse,
+     * so instead of doing smallest to largest it does largest to smallest.
+     * it does also come with a safety catch which if a unit who has gone is next up this method will prevent that unit from going prior to others.*/
     public void sortingInitiative() {
         int n = countUnitsGone(), i, j, flag;
         Debug.Log("n is " + n);
         Unit placeHolder;
         for(i = 1; i < n; i++) {
-
             placeHolder = turnOrder[i];
-            //val = turnOrder[i].speed;
             flag = 0;
-
                 for (j = i - 1; j>=0 && flag != 1;) {
                 if (!turnOrder[j].GetComponent<Unit>().hasGone) {
                     if (placeHolder.speed > turnOrder[j].speed) {
                     turnOrder[j + 1] = turnOrder[j];
-                    //turnOrder[j + 1].speed = turnOrder[i].speed;
                     j--;
                     turnOrder[j + 1] = placeHolder;
-                    //turnOrder[j + 1].speed = val;
-
                     } else {
                         flag = 1;
                     }
                 } else {
                     break;
                 }
-                
             }
-            
-           //Debug.Log("current array order is " + i + " " + turnOrder[i]);
-           //Debug.Log("current speed of each unit is " + turnOrder[i].speed);
         }
-
-        //System.Array.Reverse(turnOrder);
         for(int f = 0; f<turnOrder.Length; f++) {
             Debug.Log("index " + f + " is, unit is " + turnOrder[f].gameObject);
         }
-        //reorderDead();
     }
+    /* moveQueue is a method which treats the turn order like a queue system
+     * so rather than moving up the array for deciding who is next it instead shifts the array so whoever has gone will be last in the queue. 
+     * the main reasoning for this is because the speeds of units can change during the game 
+     * this system makes it a lot easier to manage as units change order often
+     * and that lead to a lot of bugs in turn orders which took me far too long to fix so I went with this method instead.
+     * The method checks which units are dead so dead units cannot have a turn either.*/
     public void moveQueue() {
         int deadUnits = 0;
         Unit temp;
         for (int i = 0; i < turnOrder.Length - 1; i++) {
             if (turnOrder[i].GetComponent<Unit>().isDead){
-                //reorderDead();
                 deadUnits++;
             }
         }
-            //Unit tobeMoved;
-        //turnOrder[0].GetComponent<Unit>().hasGone = true;
-        //tobeMoved = turnOrder[0];
-        //turnOrder[0] = null;
         for (int i = 0; i < turnOrder.Length-1; i++) {
-            /*if (i == turnOrder.Length) {
-                turnOrder[i] = tobeMoved;
-            }*/
             if(!turnOrder[i+1].GetComponent<Unit>().isDead){
-            //temp = turnOrder[i];
-            //temp = turnOrder[i];
-            //turnOrder[i] = null;
-            //for (int f = i; f < turnOrder.Length-1; f++) {
-                //temp = turnOrder[f-1];
                 if(i != turnOrder.Length-1 - deadUnits){
                     temp = turnOrder[i+1];
                     turnOrder[i+1] = turnOrder[i];
                     turnOrder[i] = temp;
                 }
 
-            } //else {
-                //reorderDead();
-            //}
+            }
         }
-        /*for(int i = 0; i < turnOrder.Length; i++) {
-            Debug.Log("current turn order is " + turnOrder[i]);
-        }*/
     }
+    /*reorderDead is a method which moves dead units to the back of the queue, so they can't get a turn
+     * I do this by using a temp variable which moves up the array by swapping with the entity infront of it,
+     * unfortunately this causes a bug where the sorting is unstable, so if someone were to see the ordering
+     * the dead units would swap quite frequently in turn order, but never actually have a turn.*/
     public void reorderDead() {
         Unit tempDead;
         Unit temp;
-        //int counter = 0;
         for(int i = 0; i < turnOrder.Length; i++) {
             if (turnOrder[i].GetComponent<Unit>().isDead) {
-                //Debug.Log("hi I is " + i);
                 tempDead = turnOrder[i];
-                //counter++;
                 turnOrder[i] = null;
                 for(int f = i; f < turnOrder.Length-1; f++) {
-                    //Debug.Log("hi f is " + f);
                     temp = turnOrder[f + 1];
                     turnOrder[f + 1] = turnOrder[f];
                     turnOrder[f] = temp;
@@ -169,6 +158,9 @@ public class TurnController : MonoBehaviour
             }
         }
     }
+    /* countUnitsGone is a method which at the start of each turn checks the amount of units who have had a turn,
+     * this allows the next turn to have the unit order reset by checking the amount of units alive vs the units who have gone
+     * so for example if 6 units with 1 dead unit had gone when this method would know that next turn is the last turn until the round resets.*/
     public int countUnitsGone() {
         int count = 8;
         for(int i = 0; i < turnOrder.Length; i++) {
@@ -181,23 +173,13 @@ public class TurnController : MonoBehaviour
         }
         return count;
     }
-    //slight bug where if one unit has already gone and the unit after it has to go it doesn't get reordered
-    public void duringTurnHasGone(Unit hasGone) {
-        Unit temp;
-        for(int i = 0; i < turnOrder.Length; i++) {
-            if(turnOrder[i] == hasGone) {
-                temp = turnOrder[i];
-                turnOrder[i] = null;
-                for(int f = i; f < turnOrder.Length - 1; f++) {
-                    temp = turnOrder[f + 1];
-                    turnOrder[f + 1] = turnOrder[f];
-                    turnOrder[f] = temp;
-                }
-                turnOrder[7] = hasGone;
-            
-            }
-        }
-    }
+    /* checkTurn is the method which controls the entirety of the games turn system, it allows the user to see who has their turn by using an arrow sprite
+     * each turn that happens the method checks a number of methods to check if everything is as should be, first of all it checks how many units are alive,
+     * then checks how many units have gone, this allows the game to know if a new round should be started, during each end turn the sortingInitiative method is used
+     * along with the reorderDead method to make sure no units go when they shouldn't if the round hasn't reset then the moveQueue method is called moving the queue along by 1.
+     * once the game knows whose turn it is the game restores 10% of the units mana, so mana reliant units aren't useless when they run out of mana, 
+     * then it checks if the unit has any status effects which might effect its ability to do certain actions. After that it populates the magic buttons
+     * once it knows which unit is going.*/
     public void checkTurn() {
         if (turnArrowOff != null) {
             turnArrowOff.transform.Find("TurnArrow").GetComponent<Image>().enabled = false;
@@ -238,10 +220,11 @@ public class TurnController : MonoBehaviour
             reorderDead();
         turnOrder[0].GetComponent<Unit>().hasGone = true;
         currentUnit = turnOrder[0].gameObject;
-        currentUnit.GetComponent<Unit>().mana += currentUnit.GetComponent<Unit>().mana/10; //restores 10% of mana during a units turn
+        currentUnit.GetComponent<Unit>().mana += currentUnit.GetComponent<Unit>().totalMana/10; //restores 10% of mana during a units turn
         if (currentUnit.GetComponent<Unit>().mana > currentUnit.GetComponent<Unit>().totalMana) {
             currentUnit.GetComponent<Unit>().mana = currentUnit.GetComponent<Unit>().totalMana;
         }
+        currentUnit.GetComponent<Unit>().updateStats();
         //currentUnit.GetComponent<Unit>().hasGone = true;
         //sortingInitiative();
         if (currentUnit.transform.parent.name == "Team 1 Panel") {
@@ -265,7 +248,8 @@ public class TurnController : MonoBehaviour
         magic.onClick.AddListener(abilitySorting);
     }
 
-
+    /*checkStatusEffects is a method which checks the status of a unit, if they have any effects which will effect their ability to do something
+     * this method will make sure those rules are being followed, for example a paralysed unit cannot do anything, so their ability to do actions will be lost.*/
     public void checkStatusEffect(GameObject unit) {
         if(unit.GetComponent<Unit>().isParalysed > 0) {
             GameObject.Find("Attack").GetComponent<Button>().interactable = false;
@@ -280,10 +264,15 @@ public class TurnController : MonoBehaviour
         }
         if (unit.GetComponent<Unit>().isTaunted > 0) {
             unitStatusEffected = 1;
+        }else if(unit.GetComponent<Unit>().isScared > 0) {
+            unitStatusEffected = 1;   
         } else {
             unitStatusEffected = 0;
         }     
     }
+    /* abilitySorting is the method which is called during a units turn which will format the units abilities correctly.
+     * so if the ability slot isn't empty the text will be changed to that variable name which is a string of the ability name.
+     * if the ability is empty is still be made blank and none interactable.*/
     public void abilitySorting() {
         if(!string.IsNullOrEmpty(currentUnit.GetComponent<Unit>().ability1)){
             GameObject.Find("Ability1").GetComponent<Text>().text = currentUnit.GetComponent<Unit>().ability1;
@@ -342,12 +331,15 @@ public class TurnController : MonoBehaviour
             GameObject.Find("Ability7").GetComponent<Button>().interactable = false;
         }
     }
+    //turnArrowsoff small method which turns all sprite arrows off
     public void turnArrowsoff() {
         foreach(GameObject unit in units) {
             unit.transform.Find("TargetArrow").GetComponent<Image>().enabled = false;
             unit.transform.Find("FriendlyArrow").GetComponent<Image>().enabled = false;
         }
     }
+    /* checkAlive is a method which controls if someone has won, by checking if either team has 4 dead units
+     * to save computation time it only does a majority of the method if more than 4 units are dead.*/
     public void checkAlive() {
         int count = 0;
         foreach(GameObject unit in units) {
@@ -380,16 +372,4 @@ public class TurnController : MonoBehaviour
             }
         }
     }
-    // Update is called once per frame
-   /* void EndTurn()
-    {
-        /*if (turnNumber >= 7) {
-            Debug.Log("in if");
-            turnNumber = 0;
-            turnStart = 0;
-        }
-
-
-        checkTurn();
-    }*/
 }

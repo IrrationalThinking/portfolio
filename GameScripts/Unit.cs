@@ -5,6 +5,13 @@ using UnityEngine.UI;
 using System.IO;
 using System;
 using System.Linq;
+
+/**
+  * Author: Tom Kent-Peterson
+  * Unit is a script which controls all of the information about each individual unit in my game
+  * while very verbose each unit does have a lot of different status in an be in.
+  * The script itself will only contain information about an individual unit and is a reference for other scripts to edit.
+  */
 public class Unit : MonoBehaviour
 {
     public int health, mana, attack, defense, 
@@ -26,15 +33,12 @@ public class Unit : MonoBehaviour
 
         //readFile();
     }
+    //sets the name of the unit to the gameobject name
     void Start()
     {
         unit = this.gameObject.name.ToString();
 
         readFile();
-        //GameObject naming;
-        /*unit = this.gameObject.name.ToString();
-        
-        readFile();*/
     }
 
     // Update is called once per frame
@@ -42,37 +46,28 @@ public class Unit : MonoBehaviour
     {
 
     }
+    /* readFile is a method which reads the Units.txt file and inserts the information into the appropriate variables.
+     * it firstly checks the name of the unit which is set in the Start method, then if that unit is found it adds the information
+     * on that line to each variable seperated by a space.*/
     public void readFile() {
         int counter = 0;
         string line;
         string[] words;
         string path = "Assets/Resources/Units.txt";
-        //Debug.Log("hi");
         StreamReader reader = new StreamReader(path);
         while ((line = reader.ReadLine()) != null) {
-            //Debug.Log("hi1");
             words = line.Split(' ');
-            //Debug.Log(words[0]);
             if(words[0] == unit) {
                 faction = words[1];
                 cost = int.Parse(words[2]);
-                //Debug.Log("unit is " + unit);
                 health = int.Parse(words[3]);
-                //Debug.Log("health is " + health);
                 mana = int.Parse(words[4]);
-                //Debug.Log("mana is " + mana);
                 attack = int.Parse(words[5]);
-                //Debug.Log("attack is " + attack);
                 defense = int.Parse(words[6]);
-                //Debug.Log("defense is " + defense);
                 magic = int.Parse(words[7]);
-                //Debug.Log("magic is " + magic);
                 magicResistance = int.Parse(words[8]);
-                //Debug.Log("magicresistance is " + magicResistance);
                 speed = int.Parse(words[9]);
-                //Debug.Log("speed is " + speed);
                 luck = int.Parse(words[10]);
-                //Debug.Log("luck is " + luck);
                 for(int i = 11; i < words.Length; i++) {
                     if(string.IsNullOrEmpty(ability1)){
                         ability1 = words[i];
@@ -111,9 +106,6 @@ public class Unit : MonoBehaviour
                 uiHealth.text = (health + "/" + totalHealth).ToString();
                 uiMagic = gameObject.transform.Find("Unit Magic Value").GetComponent<Text>();
                 uiMagic.text = (mana + "/" + totalMana).ToString();
-
-                //until I think of a better way to do this, I say sorry to my future self for this dishonour
-
                 break;
             } else {
                 counter++;
@@ -121,18 +113,22 @@ public class Unit : MonoBehaviour
             
             
         }
-        //Debug.Log("");
+        reader.Close();
     }
+    /*abilityTextfix this method checks if there is a capital letter in the middle of a word because if there is it means that it should be two words
+     * so this method adds a space inbetween them making the ability 2 words this causes bugs later so I use a similar check to see if they should be 1 word instead.*/
     public string abilityTextfix(string word) {
         string newString;
         newString = string.Concat(word.Select(x => Char.IsUpper(x) ? " " + x : x.ToString())).TrimStart(' ');
         word = newString;
         return word;
     }
+    /* updateStats just updates the current health/mana which is often called in the CombatContoller script*/
     public void updateStats() {
         uiHealth.text = (health + "/" + totalHealth).ToString();
         uiMagic.text = (mana + "/" + totalMana).ToString();
     }
+    /* clearStatusEffects is a method which clears the unit of all debuffs often used in certain cure skills */
     public void clearStatusEffects() {
         isSilenced = 0;
         isMaimed = 0;
@@ -150,9 +146,11 @@ public class Unit : MonoBehaviour
         luck = totalLuck;
         whoFeared = null;
         whoTaunted = null;
-        //statusEffects();
 
     }
+    /* statusEffects is a method which keeps track of the status effects a unit is under as well as reducing them by 1
+     * this is called at the end of a defenders turn and usually has their effect trigger here too.
+     */
     public void statusEffects() {
         if(isSilenced > 0) 
             isSilenced--;
@@ -221,9 +219,7 @@ public class Unit : MonoBehaviour
     }
     public void unitDead() {
         if (health <= 0) {
-            //speed = -1;
             isDead = true;
         }
     }
 }
-//isSilenced, isStunned, isMaimed, isParalysed, isSlowed, isBurning, isScared, isWeak;

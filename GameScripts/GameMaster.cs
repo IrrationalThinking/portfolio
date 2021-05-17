@@ -4,7 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
 using UnityEngine.SceneManagement;
-
+/**
+ * Author: Tom Kent-Peterson
+ * GameMaster is a script which controls a majority of the games base systems, these systems include the teams, the units, the faction,
+ * most of the functions of this are in the main menu but I carry the gameobject storing the script over because I use the script to keep track of everything game rules related.
+ */
 public class GameMaster : MonoBehaviour
 {
     //Initialise the gameobjects these will always be the same so I can afford to not make them dynamic
@@ -38,16 +42,8 @@ public class GameMaster : MonoBehaviour
     [HideInInspector]
     public bool isTeam1 = true;
     public string currentFaction;
-    //public int[] unitSpeeds = new int[8];
-    /*[HideInInspector]
-    public Unit unitStats;*/
-    // Start is called before the first frame update
-    void Awake()
-    {
-        //initialiseTeams();
-        //readAbilities();
-        
-    }
+
+    //This allows the scene changing to occur
     private void OnEnable() {
         SceneManager.sceneLoaded += OnGameStarted;
     }
@@ -65,16 +61,13 @@ public class GameMaster : MonoBehaviour
         }
         
     }
+    //Start method sets the gamemaster gameobject to not be destroyed on scene change
     void Start() {
         DontDestroyOnLoad(gameObject);
     }
     
-    // Update is called once per frame
-    void Update()
-    {
-        //GameObject.Find("Menu Panel").GetComponent<TurnController>().settingUp();
-    }
-    //puts each of the team members into the team array, it's a bit lengthy but this was the most reasonable way to do it
+    /* initialiseTeams is a method which once each player has choosen their units this method puts those units into each team.
+    */
     void initialiseTeams() {
         //initialiseUnits();
         team1[0] = unitA1;
@@ -95,30 +88,19 @@ public class GameMaster : MonoBehaviour
         unitB4.name = unitNames[7];
         readAbilities();
     }
-    /*void currentTurn() {
-
-    }*/
-
-    void checkUnits() {
-
+    /* checkUnits is a method which goes through each unit slot and grabs the script information out of it (I don't think I'm using this but not 100% sure)*/
+    /* void checkUnits() {
         for(int i = 0; i < (team1.Length+team2.Length); i++) {
             if(i < team1.Length){
                 units[i] = team1[i].GetComponentInChildren<Unit>();
-                //unitSpeeds[i] = units[i].speed;
             } else {
                 units[i] = team2[i-team2.Length].GetComponentInChildren<Unit>();
-                //unitSpeeds[i] = units[i].speed;
             }
-                //GameObject.Find("Menu Panel").GetComponent<TurnController>().settingUp();
-                //Debug.Log(units[7].health + "hi");
         }
-        //GameObject.Find("Menu Panel").GetComponent<TurnController>().settingUp();
-        /*for(int f = 0; f < units.Length; f++) {
-            Debug.Log(units[f] + " " + f);
-        }*/
-    }
+    }*/
+    /* readAbilities is a method which reads a file which contains all of the abilities in the game, 
+     * these abilities are added to a list along with their properties which is used for searching purposes*/
     public void readAbilities() {
-        //int counter = 0;
         string line;
         string[] words;
         string path = "Assets/Resources/Abilities.txt";
@@ -126,33 +108,15 @@ public class GameMaster : MonoBehaviour
         while ((line = reader.ReadLine()) != null) {
             words = line.Split(' ');
             abilities.Add(words);
-            /*for(int i = 0; i < words.Length; i++) {
-                //abilities[counter, i] = words[i];
-                //abilities[counter][i] = words[i];
-                //abilities.Add(words);
-
-                Debug.Log(abilities[i][0]);
-                /*if (i == 3) {
-                    if(words[3].Contains("0")) {
-                        break;
-                    }
-                }
-            }
-            counter++;*/
         }
-        /*foreach(string[] item in abilities) {
-            Debug.Log(item);
-        }*/
-        //Debugging purposes, currently works as intended
-        /*for(int i = 0; i < abilities.GetLength(0); i++) {
-            for(int f = 0; f < abilities.GetLength(1); f++) {
-                Debug.Log("row is " + i + " column is " + f + " " + abilities[i, f]);
-            }
-        }*/
+        reader.Close();
     }
+    /* setFaction is a short method which just sets the teams faction this is used so when the unit selection happens only units from that faction will appear*/
     public void setFaction(Button button) {
         currentFaction = button.GetComponentInChildren<Text>().text.ToString();
     }
+    /* populateButtons is a method which reads the Units file and generates prefab buttons based on how many units matches the teams faction,
+     * the method does this by checking the faction which is listed in the 2nd word in the file and checks it based on the setFaction method above.*/
     public void populateButtons() {
         //List<GameObject> unitList = new List<GameObject>();
         string line;
@@ -174,8 +138,12 @@ public class GameMaster : MonoBehaviour
         }
         unitButton.gameObject.SetActive(false);
 
-        //selectUnits(unitList);
+        reader.Close();
     }
+    /* selectUnits is a method which controls the button prefabs which are generated in the populateButtons method above,
+     * the way it works is it checks and counts how many of the toggles have been clicked so the user cannot have more or less than 4 units in their team.
+     * there is also a price cost for each unit which is either deducted or added to the points total when the user either activates or deactivates the toggle.
+     * if the user lacks points or has selected 4 units the toggles which they cannot afford or haven't been selected are deactivated until the user deselects another toggle.*/
     public void selectUnits(Toggle buttonClicked) {
         //if(points > 0)
         Debug.Log(points);
@@ -213,6 +181,7 @@ public class GameMaster : MonoBehaviour
         }
 
     }
+    /* initialiseUnits is a method which selects the unit slots in the new scene, then calls initialiseTeams so the selected units are put into the correct slots*/
     public void initialiseUnits() {
         unitA1 = GameObject.Find("UnitA1");
         unitA2 = GameObject.Find("UnitA2");
@@ -224,6 +193,8 @@ public class GameMaster : MonoBehaviour
         unitB4 = GameObject.Find("UnitB4");
         initialiseTeams();
     }
+    /* resetNums is the method which upon the first team finishing their unit selections resets everything that would've been effected by that team,
+     * such as points spent, units selected, and the actual unit prefabs themselves*/
     public void resetNums() {
         GameObject removeall;
         numSelected = 0;
@@ -238,6 +209,9 @@ public class GameMaster : MonoBehaviour
         }
         return;
     }
+    /* setTeam is a method which puts those units into the currently selected team, 
+     * first the method checks which team is choosing then checks what unit buttons are toggled on.
+     * after which it sets the name of the unit gameobject which is used for identifying purposes later on.*/
     public void setTeam() {
         int counter = 0;
         foreach (GameObject unit in unitList) {
@@ -278,6 +252,7 @@ public class GameMaster : MonoBehaviour
             }
         }
     }
+    /* loadGame loads the game if team 2 is the active one if not it returns and lets team 2 pick */
     public void loadGame() {
         if (!isTeam1){
             SceneManager.LoadScene("GameScene", LoadSceneMode.Single);
@@ -288,6 +263,7 @@ public class GameMaster : MonoBehaviour
         SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
         reset();
     }
+    //reset just sets the menu to team1 in case the player wishes to play again.
     public void reset() {
         isTeam1 = true;    
     }

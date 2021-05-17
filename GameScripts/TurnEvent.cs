@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+/* TurnEvent is a script that controls the eventbox which contains the past 20 rounds worth of game activity*/
 public class TurnEvent : MonoBehaviour {
     [SerializeField]
     private GameObject textTemplate;

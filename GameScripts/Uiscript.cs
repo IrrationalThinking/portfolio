@@ -6,6 +6,11 @@ using System.Linq;
 using System;
 using UnityEngine.EventSystems;
 
+
+/**
+ * Author: Tom Kent-Peterson 
+ * Ui script is a class that is used to control a lot of the UI features in my game.
+ * */
 public class Uiscript : MonoBehaviour
 {
     //public GameObject[] abilities = new GameObject[4];
@@ -27,10 +32,13 @@ public class Uiscript : MonoBehaviour
     {
         
     }
+    /* FixedUpdate checks the score every 60 frames I would like to move this out of fixed update and have it check on a turn ending but efficiency isn't too important here
+     * I do intend to do that later.*/
     private void FixedUpdate() {
         keepScore();
     }
-
+    /* populateTargetButtons this method is used when the user selects magic or an attack. The method will prepare all the possible targets for the user to target
+     * the script will not allow dead units to be targeted this is to avoid the user making mistakes, the counter allows me to make sure each unit is grabbed*/
     public void populateTargetButtons(GameObject team) {
         int i = 0;
         foreach (Transform unit in team.gameObject.transform) {
@@ -45,7 +53,10 @@ public class Uiscript : MonoBehaviour
             i++;
         }
     }
-    public void populateTargetingAll(GameObject team, bool isfriendlyTeam) {
+    /* populateTargetingAll is an alternate method to populateTargetButtons which is only called if the ability has a specific flag which means it targets all units.
+     * I have also included a check for if the ability only targets the unit who uses it, so instead of making all the button text being the enemy units, it removes the text
+     * and the interactability for all of the other buttons except for one hence why it is a different method.*/
+    public void populateTargetingAll(GameObject team, bool isfriendlyTeam, bool isTargetself) {
         int i = 0;
         foreach (Transform unit in team.gameObject.transform) {
             teamUnits[i].text = unit.GetComponentInChildren<Text>().text;
@@ -59,100 +70,70 @@ public class Uiscript : MonoBehaviour
             }
             i++;
         }
-        if(!isfriendlyTeam){
-            teamUnits[0].text = "All Enemies";
+        if(!isTargetself){
+            if(!isfriendlyTeam){
+                teamUnits[0].text = "All Enemies";
+            } else {
+                teamUnits[0].text = "All Allies";
+            }
         } else {
-            teamUnits[0].text = "All Allies";
+            teamUnits[0].text = "Self";
         }
     }
-
+    /* attackingEnemies is a method which sets up the targeting mechinism for the previous populateTargetting methods, 
+     * it does this by grabbing some variables from the CombatController script which check the status of the ability, 
+     * then using those the method figures out which variation of the method it needs to call. */
     public void attackingEnemies() {
         CombatController getCombatController = GameObject.Find("Combat Panel").GetComponent<CombatController>();
         bool getFriendly = getCombatController.isFriendly;
         bool allTarget = getCombatController.targetAll;
+        bool isTargetSelf = getCombatController.targetSelf;
         //int i = 0;
         GameObject currentTeam = GameObject.Find("Menu Panel").GetComponent<TurnController>().currentUnit.transform.parent.gameObject;
         //Debug.Log(currentTeam);
         if(currentTeam.name == team1.name){
-            if(!getFriendly){
-                if(!allTarget){
-                    populateTargetButtons(team2);
-                } else {
-                    populateTargetingAll(team2, getFriendly);
-                }
-                /*foreach (Transform unit in team2.gameObject.transform){
-                    teamUnits[i].text = unit.GetComponentInChildren<Text>().text;
-                    if (unit.GetComponentInChildren<Unit>().isDead) {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = false;
+            if(!isTargetSelf){
+                if(!getFriendly){
+                    if(!allTarget){
+                        populateTargetButtons(team2);
                     } else {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = true;
+                        populateTargetingAll(team2, getFriendly, false);
                     }
-                    i++;
-                }*/
+                } else {
+                    if(!allTarget){
+                        Debug.Log("is friendly for team 1");
+                        populateTargetButtons(team1);
+                    } else {
+                        populateTargetingAll(team1, getFriendly, false);
+                    }
+                }
             } else {
-                if(!allTarget){
-                    Debug.Log("is friendly for team 1");
-                    populateTargetButtons(team1);
-                } else {
-                    populateTargetingAll(team1, getFriendly);
-                }
-                /*foreach (Transform unit in team1.gameObject.transform) {
-                    teamUnits[i].text = unit.GetComponentInChildren<Text>().text;
-                    if (unit.GetComponentInChildren<Unit>().isDead) {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = false;
-                    } else {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = true;
-                    }
-                    i++;
-                }*/
+                populateTargetingAll(team1, getFriendly, isTargetSelf);
             }
         } else {
-            if(!getFriendly){
-                if(!allTarget){
-                    populateTargetButtons(team1);
-                } else{
-                    populateTargetingAll(team1, getFriendly);
-                }/*foreach (Transform unit in team1.gameObject.transform) {
-                    teamUnits[i].text = unit.GetComponentInChildren<Text>().text;
-                    if (unit.GetComponentInChildren<Unit>().isDead) {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = false;
-                    } else {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = true;
+            if (!isTargetSelf) {
+                if (!getFriendly){
+                    if(!allTarget){
+                        populateTargetButtons(team1);
+                    } else{
+                        populateTargetingAll(team1, getFriendly, false);
                     }
-                    i++;
-                }*/
-            } else {
-                if(!allTarget){
-                    Debug.Log("is Friendly for team 2");
-                    populateTargetButtons(team2);
                 } else {
-                    populateTargetingAll(team2, getFriendly);
-                }
-                /*foreach (Transform unit in team2.gameObject.transform) {
-                    teamUnits[i].text = unit.GetComponentInChildren<Text>().text;
-                    if (unit.GetComponentInChildren<Unit>().isDead) {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = false;
+                    if(!allTarget){
+                        Debug.Log("is Friendly for team 2");
+                        populateTargetButtons(team2);
                     } else {
-                        teamUnits[i].GetComponentInChildren<Button>().interactable = true;
+                        populateTargetingAll(team2, getFriendly, false);
                     }
-                    i++;
-                }*/
+                }
+            } else {
+                populateTargetingAll(team2, getFriendly, isTargetSelf);
             }
         }
-        /*ability1 = gameObject.transform.Find("Ability1").GetComponent<Text>();
-        ability2 = gameObject.transform.Find("Ability2").GetComponent<Text>();
-        ability3 = gameObject.transform.Find("Ability3").GetComponent<Text>();
-        ability4 = gameObject.transform.Find("Ability4").GetComponent<Text>();*/
-        //Transform firstChild = gameObject.transform.Find("Team 2 Panel").GetChild(0);
-        /*ability1 = team2.GetComponentInChildren<Text>(); //transform.GetComponent<Text>();
-        ability1.text = team2.name;
-        ability2 = team2.GetComponentInChildren<Text>();
-        ability2.text = team2.name;
-        ability3 = team2.GetComponentInChildren<Text>();
-        ability3.text = team2.name;
-        ability4 = team2.GetComponentInChildren<Text>();
-        ability4.text = team2.name;*/
     }
+    /* infoPanel is a method which controls an informational rulebook of each unit, allowing the user to see the units stats and abilities,
+     * the method does this by grabbing the variable value from the Unit script stored in that specific unit gameobject.
+     */
     public void infoPanel(Button button) {
         int i = 0;
         GameObject unit1 = GameObject.Find("UnitInfoTeam1");
@@ -235,12 +216,16 @@ public class Uiscript : MonoBehaviour
             unit2.transform.Find("Unit Name").GetComponent<Text>().text = button.GetComponent<Unit>().uiName.text;
         }
     }
+    /* unitClicked is a method which allows the user to access the inforPanel by clicking the unit on screen rather than the unit card,
+     * it does this by getting the button component of the gameobject which ends up being the unit card.
+     */
     public void unitClicked(GameObject spriteParent) {
         Debug.Log(spriteParent);
         Button button = spriteParent.GetComponent<Button>();
         Debug.Log(button);
         infoPanel(button);
     }
+    /*KeepSCore is a method which just checks each team for who is alive when 1 team gets to a score 0 then the other team wins*/
     public void keepScore() {
         int team1score = 4;
         int team2score = 4;
@@ -257,6 +242,8 @@ public class Uiscript : MonoBehaviour
         scores[0].GetComponent<Text>().text = team1score + "/4";
         scores[1].GetComponent<Text>().text = team2score + "/4";
     }
+    /* abilityInfo is a method which expands on the infoPanel method in the sense you can click each ability to bring up a lot of information,
+     * I dislike how this has been coded so I will probably fix this later down the track*/
     public void abilityInfo(Text abilityName) {
         GameObject currentParent;
         GameObject unitTeam;
@@ -321,6 +308,8 @@ public class Uiscript : MonoBehaviour
         
         //Debug.Log(currentUnit);
     }
+    /* debuffDescription is a method which grabs the description based on the descriptions array above and returns it as a string
+     * which sets the text object in the other method to that description*/
     public string debuffDescription(string debuffName, string[] descriptions) {
         string description = "";
         if(debuffName == "slowed") {
