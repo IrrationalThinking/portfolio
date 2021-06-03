@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 /**
  * Author Tom Kent-Peterson
  * mergeSortChallenge is creating a generic class which implements a generic merge sort algorithm, 
@@ -47,15 +48,28 @@ namespace mergeSortChallenge {
             }
             //compares the left and right index to their respective array anything which isn't caught in the sorting gets inserted after this loop
             while (leftIndex < firstArr.Length && rightIndex < secondArr.Length) {
-                //compares the left array with the right array using the CompareTo method it checks if the number is smaller by seeing if the result is less than or equals to it
-                if ((firstArr[leftIndex]).CompareTo(secondArr[rightIndex]) <= 0) {
-                    arr[currentIndex] = firstArr[leftIndex];
-                    leftIndex++;
+                //fixes an issue if the user attempts to compare a null value, this works because if two null values exist beside each other no swap will happen
+                if((firstArr[leftIndex]) != null && firstArr[rightIndex] != null){
+                    //compares the left array with the right array using the CompareTo method it checks if the number is smaller by seeing if the result is less than or equals to it
+                    if ((firstArr[leftIndex]).CompareTo(secondArr[rightIndex]) <= 0) {
+                        arr[currentIndex] = firstArr[leftIndex];
+                        leftIndex++;
+                    } else {
+                        arr[currentIndex] = secondArr[rightIndex];
+                        rightIndex++;
+                    }
+                    currentIndex++;
+                //if any of the values are null do this
                 } else {
-                    arr[currentIndex] = secondArr[rightIndex];
-                    rightIndex++;
+                    if(firstArr[leftIndex] == null){
+                        arr[currentIndex] = firstArr[leftIndex];
+                        leftIndex++;
+                    } else {
+                        arr[currentIndex] = firstArr[leftIndex];
+                        rightIndex++;
+                    }
+                    currentIndex++;
                 }
-                currentIndex++;
             }
             while (leftIndex < firstArr.Length) {
                 arr[currentIndex++] = firstArr[leftIndex++];
@@ -67,33 +81,104 @@ namespace mergeSortChallenge {
 
     }
     public class Program {
+        //The main method takes the users input and based on what the user entered will return a sorted array of the data type specified in the console
         public static void Main() {
-            double[] arr = { 5, 4, 3, 2, 1, 0, 20, 30, 50, 40, 100, 120, 60, 50, 40, 8};
-            String[] stringArr = { "hi", "i", "am", "screwed", "hi" , "this", "is", "weird", "a", "b", "he"};
-            MergeSort<double> ms = new MergeSort<double>();
-            MergeSort<string> stringversion = new MergeSort<string>();
-            Console.WriteLine("array unsorted is: \n");
-            for (int i = 0; i < arr.Length; i++) {
-                Console.Write(arr[i] + " ");
+            bool dataEntered = false;
+            string inputType = "";
+            string data = "";
+            string[] words;
+            MergeSort<int> intVersion = new MergeSort<int>();
+            MergeSort<double> doubleVersion = new MergeSort<double>();
+            MergeSort<string> stringVersion = new MergeSort<string>();
+            MergeSort<float> floatVersion = new MergeSort<float>();
+            Console.WriteLine("Enter a number to choose data type to sort: 1 = string, 2 = int, 3 = double, 4 = float \n");
+            while(!dataEntered){
+                inputType = Console.ReadLine();
+                if (inputType.Equals("1")) {
+                    Console.WriteLine("Enter strings to sort seperated by spaces: \n");
+                    data = Console.ReadLine();
+                    dataEntered = true;
+                } else if (inputType.Equals("2")) {
+                    Console.WriteLine("Enter ints to sort seperated by spaces: \n");
+                    data = Console.ReadLine();
+                    dataEntered = true;
+                } else if (inputType.Equals("3")) {
+                    Console.WriteLine("Enter doubles to sort seperated by spaces: \n");
+                    data = Console.ReadLine();
+                    dataEntered = true;
+                } else if (inputType.Equals("4")) {
+                    Console.WriteLine("Enter floats to sort seperated by spaces: \n");
+                    data = Console.ReadLine();
+                    dataEntered = true;
+                } else {
+                    Console.WriteLine("invalid input please try again \n");
+                }
             }
-            ms.mergeSort(arr, 0, arr.Length-1);
+            //prevents the user from breaking the split function with too many spaces
+            data = Regex.Replace(data, @"\s+", " ");
+            words = data.Split(' ');
+            //sorts out the new array depending on the datatype
+            int[] arrayInt = new int[words.Length];
+            float[] arrayFloat = new float[words.Length];
+            double[] arrayDouble = new double[words.Length];
+            for (int i = 0; i < words.Length; i++) {
+                if (inputType == "2") {
+                    try{
+                        arrayInt[i] = int.Parse(words[i]);
+                    } catch (FormatException) {
+                        Console.WriteLine("one or more of the entries is not a number exiting... \n");
+                        Console.ReadLine();
+                        return;
+                    }
+                } else if (inputType == "3") {
+                    try {
+                        arrayDouble[i] = double.Parse(words[i]);
+                    } catch (FormatException) {
+                        Console.WriteLine("one or more of the entries is not a number exiting... \n");
+                        Console.ReadLine();
+                        return;
+                    }
+                } else if (inputType == "4") {
+                    try {
+                        arrayFloat[i] = float.Parse(words[i]);
+                    } catch (FormatException) {
+                        Console.WriteLine("one or more of the entries is not a number exiting... \n");
+                        Console.ReadLine();
+                        return;
+                    }
+                }
+            }
 
+            Console.WriteLine("array unsorted is: \n");
+            for (int i = 0; i < words.Length; i++) {
+                Console.Write(words[i] + " ");
+            }
+            //call based on what the datatype is
+            if(inputType == "1")
+                stringVersion.mergeSort(words, 0, words.Length - 1);
+            if (inputType == "2")
+                intVersion.mergeSort(arrayInt, 0, arrayInt.Length - 1);
+            if(inputType == "3")
+                doubleVersion.mergeSort(arrayDouble, 0, arrayDouble.Length - 1);
+            if(inputType == "4")
+                floatVersion.mergeSort(arrayFloat, 0, arrayFloat.Length - 1);
+
+            //after sorting
             Console.WriteLine("\n");
             Console.WriteLine("\n sorted array is : \n");
-            for(int i = 0; i < arr.Length; i++) {
-                Console.Write(arr[i] + " ");
+            for(int i = 0; i < words.Length; i++) {
+                if(inputType == "1")
+                    Console.Write(words[i] + " ");
+                if (inputType == "2")
+                    Console.Write(arrayInt[i] + " ");
+                if (inputType == "3")
+                    Console.Write(arrayDouble[i] + " ");
+                if (inputType == "4")
+                    Console.Write(arrayFloat[i] + " ");
             }
-            Console.WriteLine("string array unsorted is: \n");
-            for (int i = 0; i < stringArr.Length; i++) {
-                Console.Write(stringArr[i] + " ");
-            }
-            stringversion.mergeSort(stringArr, 0, stringArr.Length - 1);
-            Console.WriteLine("\n");
-            Console.WriteLine("\n sorted string array is : \n");
-            for (int i = 0; i < stringArr.Length; i++) {
-                Console.Write(stringArr[i] + " ");
-            }
+
             Console.ReadLine();
         }
     }
+    
 }
